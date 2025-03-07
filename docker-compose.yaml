@@ -1,0 +1,16 @@
+services:
+  msg:
+    image: hyeonjaegil/conceptgraph
+    container_name: conceptgraph
+    runtime: nvidia
+    network_mode: host
+    ipc: host
+    gpus: all
+    environment:
+      - DISPLAY=${DISPLAY}
+      - GSA_PATH=/opt/Grounded-Segment-Anything
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /etc/localtime:/etc/localtime:ro
+    tty: true         # Allocate a pseudo-TTY
+    command: ["/bin/bash"]
