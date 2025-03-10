@@ -127,7 +127,6 @@ def main(cfg : DictConfig):
         end=cfg.end,
         stride=cfg.stride,
         basedir=cfg.dataset_root,
-        sequence=cfg.scene_id,
         desired_height=cfg.image_height,
         desired_width=cfg.image_width,
         device="cpu",
@@ -161,7 +160,7 @@ def main(cfg : DictConfig):
         
     if cfg.save_objects_all_frames:
         save_all_folder = cfg.dataset_root \
-            / cfg.scene_id / "objects_all_frames" / f"{cfg.gsa_variant}_{cfg.save_suffix}"
+            / "objects_all_frames" / f"{cfg.gsa_variant}_{cfg.save_suffix}"
         os.makedirs(save_all_folder, exist_ok=True)
 
     for idx in trange(len(dataset)):
@@ -187,7 +186,7 @@ def main(cfg : DictConfig):
         gobs = None # stands for grounded SAM observations
 
         color_path = Path(color_path)
-        detections_path = cfg.dataset_root / cfg.scene_id / cfg.detection_folder_name / color_path.name
+        detections_path = cfg.dataset_root / cfg.detection_folder_name / color_path.name
         detections_path = detections_path.with_suffix(".pkl.gz")
         color_path = str(color_path)
         detections_path = str(detections_path)
@@ -427,7 +426,6 @@ def main(cfg : DictConfig):
         frames = np.stack(frames)
         video_save_path = (
             cfg.dataset_root
-            / cfg.scene_id
             / ("objects_mapping-%s-%s.mp4" % (cfg.gsa_variant, cfg.save_suffix))
         )
         imageio.mimwrite(video_save_path, frames, fps=10)

@@ -346,7 +346,6 @@ class ICLDataset(GradSLAMDataset):
         self,
         config_dict: Dict,
         basedir: Union[Path, str],
-        sequence: Union[Path, str],
         stride: Optional[int] = 1,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -358,7 +357,7 @@ class ICLDataset(GradSLAMDataset):
         embedding_file_extension: Optional[str] = "pt",
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         # Attempt to find pose file (*.gt.sim)
         self.pose_path = glob.glob(os.path.join(self.input_folder, "*.gt.sim"))
         if self.pose_path == 0:
@@ -428,7 +427,6 @@ class ReplicaDataset(GradSLAMDataset):
         self,
         config_dict,
         basedir,
-        sequence,
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -439,7 +437,7 @@ class ReplicaDataset(GradSLAMDataset):
         embedding_dim: Optional[int] = 512,
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         self.pose_path = os.path.join(self.input_folder, "traj.txt")
         super().__init__(
             config_dict,
@@ -487,7 +485,6 @@ class ScannetDataset(GradSLAMDataset):
         self,
         config_dict,
         basedir,
-        sequence,
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -498,7 +495,7 @@ class ScannetDataset(GradSLAMDataset):
         embedding_dim: Optional[int] = 512,
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         self.pose_path = None
 
         # Load the intrinsic matrix from the file in each scene
@@ -551,7 +548,6 @@ class Ai2thorDataset(GradSLAMDataset):
         self,
         config_dict,
         basedir,
-        sequence,
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -562,7 +558,7 @@ class Ai2thorDataset(GradSLAMDataset):
         embedding_dim: Optional[int] = 512,
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         super().__init__(
             config_dict,
             stride=stride,
@@ -620,7 +616,6 @@ class AzureKinectDataset(GradSLAMDataset):
         self,
         config_dict,
         basedir,
-        sequence,
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -631,12 +626,12 @@ class AzureKinectDataset(GradSLAMDataset):
         embedding_dim: Optional[int] = 512,
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         self.pose_path = None
 
         # check if a file named 'poses_global_dvo.txt' exists in the basedir / sequence folder 
-        if os.path.isfile(os.path.join(basedir, sequence, 'poses_global_dvo.txt')):
-            self.pose_path = os.path.join(basedir, sequence, 'poses_global_dvo.txt')
+        if os.path.isfile(os.path.join(self.input_folder, 'poses_global_dvo.txt')):
+            self.pose_path = os.path.join(self.input_folder, 'poses_global_dvo.txt')
             
         # if "odomfile" in kwargs.keys():
         #     self.pose_path = kwargs["odomfile"]
@@ -727,7 +722,6 @@ class RealsenseDataset(GradSLAMDataset):
         self,
         config_dict,
         basedir,
-        sequence,
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -738,7 +732,7 @@ class RealsenseDataset(GradSLAMDataset):
         embedding_dim: Optional[int] = 512,
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         # only poses/images/depth corresponding to the realsense_camera_order are read/used
         self.pose_path = os.path.join(self.input_folder, "poses")
         super().__init__(
@@ -801,7 +795,6 @@ class Record3DDataset(GradSLAMDataset):
         self,
         config_dict,
         basedir,
-        sequence,
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -812,7 +805,7 @@ class Record3DDataset(GradSLAMDataset):
         embedding_dim: Optional[int] = 512,
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         self.pose_path = os.path.join(self.input_folder, "poses")
         super().__init__(
             config_dict,
@@ -950,7 +943,6 @@ class Hm3dDataset(GradSLAMDataset):
         self,
         config_dict,
         basedir,
-        sequence,
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -961,7 +953,7 @@ class Hm3dDataset(GradSLAMDataset):
         embedding_dim: Optional[int] = 512,
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         self.pose_path = None
         super().__init__(
             config_dict,
@@ -1016,7 +1008,6 @@ class Hm3dOpeneqaDataset(GradSLAMDataset):
         self,
         config_dict,
         basedir,
-        sequence,
         stride: Optional[int] = None,
         start: Optional[int] = 0,
         end: Optional[int] = -1,
@@ -1027,7 +1018,7 @@ class Hm3dOpeneqaDataset(GradSLAMDataset):
         embedding_dim: Optional[int] = 512,
         **kwargs,
     ):
-        self.input_folder = os.path.join(basedir, sequence)
+        self.input_folder = basedir
         self.pose_path = None
 
         # Load the intrinsic matrix from the file in each scene
@@ -1165,28 +1156,30 @@ def common_dataset_to_batch(dataset):
     return colors, depths, intrinsics, poses, embeddings
 
 @measure_time
-def get_dataset(dataconfig, basedir, sequence, **kwargs):
+def get_dataset(dataconfig, basedir, **kwargs):
     config_dict = load_dataset_config(dataconfig)
     if config_dict["dataset_name"].lower() in ["icl"]:
-        return ICLDataset(config_dict, basedir, sequence, **kwargs)
+        return ICLDataset(config_dict, basedir, **kwargs)
+    elif config_dict["dataset_name"].lower() in ["rio10"]:
+        return RIO10Dataset(config_dict, basedir, **kwargs)
     elif config_dict["dataset_name"].lower() in ["replica"]:
-        return ReplicaDataset(config_dict, basedir, sequence, **kwargs)
+        return ReplicaDataset(config_dict, basedir, **kwargs)
     elif config_dict["dataset_name"].lower() in ["azure", "azurekinect"]:
-        return AzureKinectDataset(config_dict, basedir, sequence, **kwargs)
+        return AzureKinectDataset(config_dict, basedir, **kwargs)
     elif config_dict["dataset_name"].lower() in ["scannet"]:
-        return ScannetDataset(config_dict, basedir, sequence, **kwargs)
+        return ScannetDataset(config_dict, basedir, **kwargs)
     elif config_dict["dataset_name"].lower() in ["ai2thor"]:
-        return Ai2thorDataset(config_dict, basedir, sequence, **kwargs)
+        return Ai2thorDataset(config_dict, basedir, **kwargs)
     elif config_dict["dataset_name"].lower() in ["record3d"]:
-        return Record3DDataset(config_dict, basedir, sequence, **kwargs)
+        return Record3DDataset(config_dict, basedir, **kwargs)
     elif config_dict["dataset_name"].lower() in ["realsense"]:
-        return RealsenseDataset(config_dict, basedir, sequence, **kwargs)
+        return RealsenseDataset(config_dict, basedir, **kwargs)
     elif config_dict["dataset_name"].lower() in ["multiscan"]:
-        return MultiscanDataset(config_dict, basedir, sequence, **kwargs)
+        return MultiscanDataset(config_dict, basedir, **kwargs) # requires "sequence" argument
     elif config_dict['dataset_name'].lower() in ['hm3d']:
-        return Hm3dDataset(config_dict, basedir, sequence, **kwargs)
+        return Hm3dDataset(config_dict, basedir, **kwargs)
     elif config_dict['dataset_name'].lower() in ['hm3d-openeqa']:
-        return Hm3dOpeneqaDataset(config_dict, basedir, sequence, **kwargs)
+        return Hm3dOpeneqaDataset(config_dict, basedir, **kwargs)
     else:
         raise ValueError(f"Unknown dataset name {config_dict['dataset_name']}")
 
@@ -1197,8 +1190,7 @@ if __name__ == "__main__":
     )
     dataset = ReplicaDataset(
         config_dict=cfg,
-        basedir="/home/qiao/src/nice-slam/Datasets/Replica",
-        sequence="office0",
+        basedir="/home/qiao/src/nice-slam/Datasets/Replica/office0",
         start=0,
         end=1900,
         stride=100,

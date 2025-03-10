@@ -95,8 +95,6 @@ def get_parser() -> argparse.ArgumentParser:
         help="This path may need to be changed depending on where you run this script. "
     )
     
-    parser.add_argument("--scene_id", type=str, default="train_3")
-    
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--end", type=int, default=-1)
     parser.add_argument("--stride", type=int, default=1)
@@ -330,7 +328,6 @@ def main(args: argparse.Namespace):
         end=args.end,
         stride=args.stride,
         basedir=args.dataset_root,
-        sequence=args.scene_id,
         desired_height=args.desired_height,
         desired_width=args.desired_width,
         device="cpu",
@@ -346,7 +343,7 @@ def main(args: argparse.Namespace):
     
     if args.class_set == "scene":
         # Load the object meta information
-        obj_meta_path = args.dataset_root / args.scene_id / "obj_meta.json"
+        obj_meta_path = args.dataset_root / "obj_meta.json"
         with open(obj_meta_path, "r") as f:
             obj_meta = json.load(f)
         # Get a list of object classes in the scene
@@ -413,7 +410,7 @@ def main(args: argparse.Namespace):
         save_name += f"_{args.exp_suffix}"
     
     if args.save_video:
-        video_save_path = args.dataset_root / args.scene_id / f"gsa_vis_{save_name}.mp4"
+        video_save_path = args.dataset_root / f"gsa_vis_{save_name}.mp4"
         frames = []
     
     for idx in trange(len(dataset)):
@@ -422,8 +419,8 @@ def main(args: argparse.Namespace):
 
         color_path = Path(color_path)
         
-        vis_save_path = args.dataset_root / args.scene_id / f"gsa_vis_{save_name}" / color_path.name
-        detections_save_path = args.dataset_root / args.scene_id / f"gsa_detections_{save_name}" / color_path.name
+        vis_save_path = args.dataset_root / f"gsa_vis_{save_name}" / color_path.name
+        detections_save_path = args.dataset_root / f"gsa_detections_{save_name}" / color_path.name
         detections_save_path = detections_save_path.with_suffix(".pkl.gz")
         
         os.makedirs(os.path.dirname(vis_save_path), exist_ok=True)
@@ -607,7 +604,7 @@ def main(args: argparse.Namespace):
             pickle.dump(results, f)
     
     # save global classes
-    with open(args.dataset_root / args.scene_id / f"gsa_classes_{save_name}.json", "w") as f:
+    with open(args.dataset_root / f"gsa_classes_{save_name}.json", "w") as f:
         json.dump(list(global_classes), f)
             
     if args.save_video:

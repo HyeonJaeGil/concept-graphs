@@ -117,7 +117,6 @@ def main_pipeline_detection_segmentation():
         end=args.end,
         stride=args.stride,
         basedir=args.dataset_root,
-        sequence=args.scene_id,
         desired_height=args.desired_height,
         desired_width=args.desired_width,
         device="cpu",

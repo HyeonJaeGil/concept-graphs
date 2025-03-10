@@ -32,7 +32,6 @@ def get_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dataset_root", type=Path, required=True, help="Path to the dataset root")
     parser.add_argument("--dataset_config", type=str, required=True,
                         help="Path to the dataset configuration file")
-    parser.add_argument("--scene_id", type=str, required=True, help="Scene identifier")
     parser.add_argument("--start", type=int, default=0)
     parser.add_argument("--end", type=int, default=-1)
     parser.add_argument("--stride", type=int, default=1)
@@ -67,10 +66,10 @@ def get_save_name(args: argparse.Namespace) -> str:
 def get_default_path(args: argparse.Namespace):
     save_name = get_save_name(args)
     return {
-        "gsa_classes": args.dataset_root / args.scene_id / f"gsa_classes_{save_name}.json",
-        "tagging_results": args.dataset_root / args.scene_id / f"tagging_results_{save_name}",
-        "detection_results": args.dataset_root / args.scene_id / f"detection_results_{save_name}",
-        "final_results": args.dataset_root / args.scene_id / f"gsa_detections_{save_name}"
+        "gsa_classes": args.dataset_root / f"gsa_classes_{save_name}.json",
+        "tagging_results": args.dataset_root / f"tagging_results_{save_name}",
+        "detection_results": args.dataset_root / f"detection_results_{save_name}",
+        "final_results": args.dataset_root / f"gsa_detections_{save_name}"
     }
 
 

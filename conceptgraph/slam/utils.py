@@ -38,14 +38,14 @@ def get_classes_colors(classes):
 def create_or_load_colors(cfg, filename="gsa_classes_tag2text"):
     
     # get the classes, should be saved when making the dataset
-    classes_fp = cfg['dataset_root'] / cfg['scene_id'] / f"{filename}.json"
+    classes_fp = cfg['dataset_root'] / f"{filename}.json"
     classes  = None
     with open(classes_fp, "r") as f:
         classes = json.load(f)
     
     # create the class colors, or load them if they exist
     class_colors  = None
-    class_colors_fp = cfg['dataset_root'] / cfg['scene_id'] / f"{filename}_colors.json"
+    class_colors_fp = cfg['dataset_root'] / f"{filename}_colors.json"
     if class_colors_fp.exists():
         with open(class_colors_fp, "r") as f:
             class_colors = json.load(f)
