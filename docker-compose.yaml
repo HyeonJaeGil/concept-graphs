@@ -1,5 +1,11 @@
+version: '3.8'
 services:
-  msg:
+  conceptgraph:
+    build:
+      context: .
+      args:
+        GIT_EMAIL: ${GIT_EMAIL}
+        GIT_NAME: ${GIT_NAME}
     image: hyeonjaegil/conceptgraph
     container_name: conceptgraph
     runtime: nvidia
@@ -9,8 +15,17 @@ services:
     environment:
       - DISPLAY=${DISPLAY}
       - GSA_PATH=/opt/Grounded-Segment-Anything
+    deploy:
+      resources:
+        limits:
+          memory: "24g"
+        reservations:
+          memory: "16g"
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - /etc/localtime:/etc/localtime:ro
-    tty: true         # Allocate a pseudo-TTY
+      - ${HOST_GSA_PATH}:/opt/Grounded-Segment-Anything
+      - ${HOST_CONCEPT_GRAPHS_PATH}:/root/concept-graphs
+      - ${HOST_DATA_PATH}:${HOST_DATA_PATH}
+    tty: true
     command: ["/bin/bash"]
