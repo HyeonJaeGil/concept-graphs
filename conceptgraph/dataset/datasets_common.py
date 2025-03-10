@@ -422,6 +422,61 @@ class ICLDataset(GradSLAMDataset):
         return embedding.permute(0, 2, 3, 1)  # (1, H, W, embedding_dim)
 
 
+class RIO10Dataset(GradSLAMDataset):
+    def __init__(
+        self,
+        config_dict,
+        basedir,
+        stride: Optional[int] = None,
+        start: Optional[int] = 0,
+        end: Optional[int] = -1,
+        desired_height: Optional[int] = 960,
+        desired_width: Optional[int] = 540,
+        load_embeddings: Optional[bool] = False,
+        embedding_dir: Optional[str] = "embeddings",
+        embedding_dim: Optional[int] = 512,
+        **kwargs,
+    ):
+        self.input_folder = basedir
+        self.pose_path = os.path.join(self.input_folder, "poses.txt")
+        super().__init__(
+            config_dict,
+            stride=stride,
+            start=start,
+            end=end,
+            desired_height=desired_height,
+            desired_width=desired_width,
+            load_embeddings=load_embeddings,
+            embedding_dir=embedding_dir,
+            embedding_dim=embedding_dim,
+            **kwargs,
+        )
+
+    def get_filepaths(self):
+        color_paths = natsorted(glob.glob(f"{self.input_folder}/images/frame-*.color.jpg"))
+        depth_paths = natsorted(glob.glob(f"{self.input_folder}/depth/frame-*.rendered.depth.png"))
+        embedding_paths = None
+        if self.load_embeddings:
+            raise ValueError("This is not implemented yet")
+        return color_paths, depth_paths, embedding_paths
+
+    def load_poses(self):
+        poses = []
+        with open(self.pose_path, "r") as f:
+            lines = f.readlines()
+        for i in range(self.num_imgs):
+            line = lines[i]
+            c2w = np.array(list(map(float, line.split()))).reshape(4, 4)
+            # c2w[:3, 1] *= -1
+            # c2w[:3, 2] *= -1
+            c2w = torch.from_numpy(c2w).float()
+            poses.append(c2w)
+        return poses
+
+    def read_embedding_from_file(self, embedding_file_path):
+        embedding = torch.load(embedding_file_path)
+        return embedding.permute(0, 2, 3, 1)  # (1, H, W, embedding_dim)
+
 class ReplicaDataset(GradSLAMDataset):
     def __init__(
         self,
