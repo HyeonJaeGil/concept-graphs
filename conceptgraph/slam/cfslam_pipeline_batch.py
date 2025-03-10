@@ -32,7 +32,7 @@ from conceptgraph.utils.ious import (
 )
 from conceptgraph.utils.general_utils import to_tensor
 
-from conceptgraph.slam.slam_classes import MapObjectList, DetectionList
+from conceptgraph.slam.slam_classes import MapObjectList, DetectionList, save_detections, load_detections
 from conceptgraph.slam.utils import (
     create_or_load_colors,
     merge_obj2_into_obj1, 
@@ -361,35 +361,23 @@ def main(cfg : DictConfig):
     if cfg.save_pcd:
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        results = {
-            'objects': objects.to_serializable(),
-            'bg_objects': None if bg_objects is None else bg_objects.to_serializable(),
-            'cfg': cfg,
-            'class_names': classes,
-            'class_colors': class_colors,
-        }
 
-        pcd_save_path = cfg.dataset_root / \
-            cfg.scene_id / 'pcd_saves' / f"full_pcd_{cfg.gsa_variant}_{cfg.save_suffix}.pkl.gz"
-        # make the directory if it doesn't exist
-        pcd_save_path.parent.mkdir(parents=True, exist_ok=True)
-        pcd_save_path = str(pcd_save_path)
-        
-        with gzip.open(pcd_save_path, "wb") as f:
-            pickle.dump(results, f)
-        print(f"Saved full point cloud to {pcd_save_path}")
-    
+        pcd_save_dir = cfg.dataset_root / 'pcd_saves' / f"full_pcd_{cfg.gsa_variant}_{cfg.save_suffix}"
+        pcd_save_dir.mkdir(parents=True, exist_ok=True)
+        save_detections(pcd_save_dir, objects, bg_objects, cfg, classes, class_colors)
+
+        # debug: use load_detections to load the saved detections
+        del objects, bg_objects
+        objects, bg_objects, metadata = load_detections(pcd_save_dir)
+
     objects = filter_objects(cfg, objects)
     objects = merge_objects(cfg, objects)
     
     # Save again the full point cloud after the post-processing
     if cfg.save_pcd:
-        results['objects'] = objects.to_serializable()
-        pcd_save_path = pcd_save_path[:-7] + "_post.pkl.gz"
-        with gzip.open(pcd_save_path, "wb") as f:
-            pickle.dump(results, f)
-        print(f"Saved full point cloud after post-processing to {pcd_save_path}")
-        
+        pcd_save_dir = cfg.dataset_root / 'pcd_saves' / f"full_pcd_{cfg.gsa_variant}_{cfg.save_suffix}_post"
+        pcd_save_dir.mkdir(parents=True, exist_ok=True)
+        save_detections(pcd_save_dir, objects, bg_objects, cfg, classes, class_colors)
     if cfg.save_objects_all_frames:
         save_meta_path = save_all_folder / f"meta.pkl.gz"
         with gzip.open(save_meta_path, "wb") as f:

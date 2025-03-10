@@ -154,3 +154,97 @@ class MapObjectList(DetectionList):
             del new_obj['pcd_color_np']
             
             self.append(new_obj)
+
+import os
+import gzip
+import pickle
+from pathlib import Path
+from datetime import datetime
+
+def save_detections(save_folder: Path, objects, bg_objects, cfg, class_names, class_colors):
+    """
+    Save detections as individual pickle files in subfolders.
+    
+    Args:
+        save_folder (Path): The folder to save all detections.
+        objects (MapObjectList): The list of detected objects.
+        bg_objects (MapObjectList or None): The list of background objects (if any).
+        cfg: Configuration object.
+        class_names: List of class names.
+        class_colors: Dictionary of class colors.
+    """
+    # Create the main save folder if it doesn't exist.
+    save_folder.mkdir(parents=True, exist_ok=True)
+
+    # Save the objects in a subfolder.
+    objects_folder = save_folder / "objects"
+    objects_folder.mkdir(parents=True, exist_ok=True)
+    # Get a serializable list (each object as a dict)
+    objects_serialized = objects.to_serializable()
+    for idx, obj in enumerate(objects_serialized):
+        file_path = objects_folder / f"object_{idx:04d}.pkl.gz"
+        with gzip.open(file_path, "wb") as f:
+            pickle.dump(obj, f)
+
+    # Save background objects if available.
+    if bg_objects is not None:
+        bg_folder = save_folder / "bg_objects"
+        bg_folder.mkdir(parents=True, exist_ok=True)
+        bg_serialized = bg_objects.to_serializable()
+        for idx, obj in enumerate(bg_serialized):
+            file_path = bg_folder / f"bg_object_{idx:04d}.pkl.gz"
+            with gzip.open(file_path, "wb") as f:
+                pickle.dump(obj, f)
+
+    # Save metadata (cfg, class names, class colors) in the root of save_folder.
+    metadata = {
+        'cfg': cfg,
+        'class_names': class_names,
+        'class_colors': class_colors,
+    }
+    metadata_path = save_folder / "metadata.pkl.gz"
+    with gzip.open(metadata_path, "wb") as f:
+        pickle.dump(metadata, f)
+
+    print(f"Saved detections to {save_folder}")
+
+def load_detections(load_folder: Path):
+    """
+    Load detections from a folder created by save_detections.
+    This function rehydrates each detection (using MapObjectList.load_serializable)
+    so that keys like 'pcd' and 'bbox' are properly reconstructed.
+    
+    Returns:
+        objects (MapObjectList), bg_objects (MapObjectList or None), metadata (dict)
+    """
+    # Load metadata first.
+    metadata_path = load_folder / "metadata.pkl.gz"
+    with gzip.open(metadata_path, "rb") as f:
+        metadata = pickle.load(f)
+
+    # Load serialized objects from the "objects" subfolder.
+    objects_folder = load_folder / "objects"
+    objects_serialized = []
+    for file_path in sorted(objects_folder.glob("object_*.pkl.gz")):
+        with gzip.open(file_path, "rb") as f:
+            obj = pickle.load(f)
+        objects_serialized.append(obj)
+    
+    # Convert the list of dicts into a MapObjectList using load_serializable.
+    objects = MapObjectList()
+    objects.load_serializable(objects_serialized)
+
+    # Load background objects if available.
+    bg_objects = None
+    bg_folder = load_folder / "bg_objects"
+    if bg_folder.exists():
+        bg_serialized = []
+        for file_path in sorted(bg_folder.glob("bg_object_*.pkl.gz")):
+            with gzip.open(file_path, "rb") as f:
+                obj = pickle.load(f)
+            bg_serialized.append(obj)
+        bg_objects = MapObjectList()
+        bg_objects.load_serializable(bg_serialized)
+
+    print(f"Loaded {len(objects)} objects and {len(bg_objects) if bg_objects is not None else 0} background objects")
+    return objects, bg_objects, metadata
