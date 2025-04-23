@@ -208,6 +208,46 @@ def save_detections(save_folder: Path, objects, bg_objects, cfg, class_names, cl
 
     print(f"Saved detections to {save_folder}")
 
+
+def save_detections_pcd(save_folder: Path, objects, bg_objects, cfg, class_names, class_colors):
+    # save the pcds under the subfolder "objects_pcd" and "bg_objects_pcd"
+
+    # Create the main save folder if it doesn't exist.
+    save_folder.mkdir(parents=True, exist_ok=True)
+    # Save the objects in a subfolder.
+    objects_folder = save_folder / "objects_pcd"
+    objects_folder.mkdir(parents=True, exist_ok=True)
+    # Get a serializable list (each object as a dict)
+    objects_serialized = objects.to_serializable()
+    for idx, obj in enumerate(objects_serialized):
+        file_path = objects_folder / f"object_{idx:04d}.pcd"
+        pcd = o3d.geometry.PointCloud()
+        pcd.points = o3d.utility.Vector3dVector(obj['pcd_np'])
+        pcd.colors = o3d.utility.Vector3dVector(obj['pcd_color_np'])
+        o3d.io.write_point_cloud(file_path, pcd)
+    # Save background objects if available.
+    if bg_objects is not None:
+        bg_folder = save_folder / "bg_objects_pcd"
+        bg_folder.mkdir(parents=True, exist_ok=True)
+        bg_serialized = bg_objects.to_serializable()
+        for idx, obj in enumerate(bg_serialized):
+            file_path = bg_folder / f"bg_object_{idx:04d}.pcd"
+            pcd = o3d.geometry.PointCloud()
+            pcd.points = o3d.utility.Vector3dVector(obj['pcd_np'])
+            pcd.colors = o3d.utility.Vector3dVector(obj['pcd_color_np'])
+            o3d.io.write_point_cloud(file_path, pcd)
+    # Save metadata (cfg, class names, class colors) in the root of save_folder.
+    metadata = {
+        'cfg': cfg,
+        'class_names': class_names,
+        'class_colors': class_colors,
+    }
+    metadata_path = save_folder / "metadata.pkl.gz"
+    with gzip.open(metadata_path, "wb") as f:
+        pickle.dump(metadata, f)
+    print(f"Saved pcds to {save_folder}")
+
+
 def load_detections(load_folder: Path):
     """
     Load detections from a folder created by save_detections.

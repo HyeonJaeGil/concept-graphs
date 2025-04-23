@@ -32,7 +32,7 @@ from conceptgraph.utils.ious import (
 )
 from conceptgraph.utils.general_utils import to_tensor
 
-from conceptgraph.slam.slam_classes import MapObjectList, DetectionList, save_detections, load_detections
+from conceptgraph.slam.slam_classes import MapObjectList, DetectionList, save_detections, save_detections_pcd, load_detections
 from conceptgraph.slam.utils import (
     create_or_load_colors,
     merge_obj2_into_obj1, 
@@ -365,6 +365,7 @@ def main(cfg : DictConfig):
         pcd_save_dir = cfg.dataset_root / 'pcd_saves' / f"full_pcd_{cfg.gsa_variant}_{cfg.save_suffix}"
         pcd_save_dir.mkdir(parents=True, exist_ok=True)
         save_detections(pcd_save_dir, objects, bg_objects, cfg, classes, class_colors)
+        save_detections_pcd(pcd_save_dir, objects, bg_objects, cfg, classes, class_colors)
 
         # debug: use load_detections to load the saved detections
         del objects, bg_objects
@@ -378,6 +379,7 @@ def main(cfg : DictConfig):
         pcd_save_dir = cfg.dataset_root / 'pcd_saves' / f"full_pcd_{cfg.gsa_variant}_{cfg.save_suffix}_post"
         pcd_save_dir.mkdir(parents=True, exist_ok=True)
         save_detections(pcd_save_dir, objects, bg_objects, cfg, classes, class_colors)
+        save_detections_pcd(pcd_save_dir, objects, bg_objects, cfg, classes, class_colors)
     if cfg.save_objects_all_frames:
         save_meta_path = save_all_folder / f"meta.pkl.gz"
         with gzip.open(save_meta_path, "wb") as f:
