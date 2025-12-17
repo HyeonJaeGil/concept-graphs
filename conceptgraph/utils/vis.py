@@ -194,7 +194,7 @@ def vis_result_fast(
     image: np.ndarray, 
     detections: sv.Detections, 
     classes: list[str], 
-    color: Color | ColorPalette = ColorPalette.default(), 
+    color: Color | ColorPalette = ColorPalette.DEFAULT, 
     instance_random_color: bool = False,
     draw_bbox: bool = True,
 ) -> np.ndarray:

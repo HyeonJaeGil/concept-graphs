@@ -166,9 +166,8 @@ The following command runs a 3D RGB reconstruction ([GradSLAM](https://github.co
 ```bash
 SCENE_NAME=room0
 python scripts/run_slam_rgb.py \
-    --dataset_root $REPLICA_ROOT \
+    --dataset_root $REPLICA_ROOT/$SCENE_NAME \
     --dataset_config $REPLICA_CONFIG_PATH \
-    --scene_id $SCENE_NAME \
     --image_height 480 \
     --image_width 640 \
     --stride 5 \
@@ -186,18 +185,16 @@ SCENE_NAME=room0
 
 # The CoceptGraphs (without open-vocab detector)
 python scripts/generate_gsa_results.py \
-    --dataset_root $REPLICA_ROOT \
+    --dataset_root $REPLICA_ROOT/$SCENE_NAME \
     --dataset_config $REPLICA_CONFIG_PATH \
-    --scene_id $SCENE_NAME \
     --class_set none \
     --stride 5
 
 # The ConceptGraphs-Detect 
 CLASS_SET=ram
 python scripts/generate_gsa_results.py \
-    --dataset_root $REPLICA_ROOT \
+    --dataset_root $REPLICA_ROOT/$SCENE_NAME \
     --dataset_config $REPLICA_CONFIG_PATH \
-    --scene_id $SCENE_NAME \
     --class_set $CLASS_SET \
     --box_threshold 0.2 \
     --text_threshold 0.2 \
