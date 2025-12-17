@@ -1156,7 +1156,7 @@ def common_dataset_to_batch(dataset):
     return colors, depths, intrinsics, poses, embeddings
 
 @measure_time
-def get_dataset(dataconfig, basedir, sequence, **kwargs):
+def get_dataset(dataconfig, basedir, **kwargs):
     config_dict = load_dataset_config(dataconfig)
     if config_dict["dataset_name"].lower() in ["icl"]:
         return ICLDataset(config_dict, basedir, **kwargs)
@@ -1172,8 +1172,8 @@ def get_dataset(dataconfig, basedir, sequence, **kwargs):
         return Record3DDataset(config_dict, basedir, **kwargs)
     elif config_dict["dataset_name"].lower() in ["realsense"]:
         return RealsenseDataset(config_dict, basedir, **kwargs)
-    elif config_dict["dataset_name"].lower() in ["multiscan"]:
-        return MultiscanDataset(config_dict, basedir, sequence, **kwargs) # only multiscan needs sequence name
+    # elif config_dict["dataset_name"].lower() in ["multiscan"]:
+    #     return MultiscanDataset(config_dict, basedir, sequence, **kwargs) # only multiscan needs sequence name
     elif config_dict['dataset_name'].lower() in ['hm3d']:
         return Hm3dDataset(config_dict, basedir, **kwargs)
     elif config_dict['dataset_name'].lower() in ['hm3d-openeqa']:
