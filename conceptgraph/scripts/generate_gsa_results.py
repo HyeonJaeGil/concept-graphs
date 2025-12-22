@@ -249,7 +249,7 @@ def get_sam_mask_generator(variant:str, device: str | int) -> SamAutomaticMaskGe
         mask_generator = SamAutomaticMaskGenerator(
             model=sam,
             points_per_side=12,
-            points_per_batch=144,
+            points_per_batch=12,
             pred_iou_thresh=0.88,
             stability_score_thresh=0.95,
             crop_n_layers=0,
@@ -329,15 +329,6 @@ def main(args: argparse.Namespace):
         grounding_dino_model = None
         mask_generator = None
         sam_predictor = None
-    
-    ### Initialize the CLIP model only if feature extraction is needed ###
-    clip_model = clip_preprocess = clip_tokenizer = None
-    if need_clip and args.stage == "clip":
-        clip_model, _, clip_preprocess = open_clip.create_model_and_transforms(
-            "ViT-H-14", "laion2b_s32b_b79k"
-        )
-        clip_model = clip_model.to(args.device)
-        clip_tokenizer = open_clip.get_tokenizer("ViT-H-14")
     
     # Initialize the dataset
     dataset = get_dataset(
@@ -618,6 +609,28 @@ def main(args: argparse.Namespace):
             with gzip.open(detections_save_path, "wb") as f:
                 pickle.dump(results, f)
 
+
+    if need_seg:
+        run_segmentation_pass()
+
+    # Free segmentation models before heavy CLIP pass if both stages are run in one go.
+    if need_seg and need_clip:
+        del grounding_dino_model
+        del sam_predictor
+        del mask_generator
+        del yolo_model_w_classes
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
+    ### Initialize the CLIP model only if feature extraction is needed ###
+    clip_model = clip_preprocess = clip_tokenizer = None
+    if need_clip and args.stage == "clip":
+        clip_model, _, clip_preprocess = open_clip.create_model_and_transforms(
+            "ViT-H-14", "laion2b_s32b_b79k"
+        )
+        clip_model = clip_model.to(args.device)
+        clip_tokenizer = open_clip.get_tokenizer("ViT-H-14")
+
     def run_clip_pass():
         nonlocal clip_model, clip_preprocess, clip_tokenizer
         if clip_model is None:
@@ -658,18 +671,6 @@ def main(args: argparse.Namespace):
 
             with gzip.open(detections_save_path, "wb") as f:
                 pickle.dump(results, f)
-
-    if need_seg:
-        run_segmentation_pass()
-
-    # Free segmentation models before heavy CLIP pass if both stages are run in one go.
-    if need_seg and need_clip:
-        del grounding_dino_model
-        del sam_predictor
-        del mask_generator
-        del yolo_model_w_classes
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
 
     if need_clip:
         run_clip_pass()

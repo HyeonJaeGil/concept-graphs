@@ -220,10 +220,9 @@ The following command builds an object-based 3D map of the scene, using the imag
 # Using the CoceptGraphs (without open-vocab detector)
 THRESHOLD=1.2
 python slam/cfslam_pipeline_batch.py \
-    dataset_root=$REPLICA_ROOT \
+    dataset_root=$REPLICA_ROOT/$SCENE_NAME \
     dataset_config=$REPLICA_CONFIG_PATH \
     stride=5 \
-    scene_id=$SCENE_NAME \
     spatial_sim_type=overlap \
     mask_conf_threshold=0.95 \
     match_method=sim_sum \
@@ -284,6 +283,8 @@ Then in the open3d visualizer window, you can use the following key callbacks to
 First, download the GT point cloud with per-point semantic segmentation labels from this [Google Drive link](https://drive.google.com/file/d/1NhQIM5PCH5L5vkZDSRq6YF1bRaSX2aem/view?usp=sharing). Please refer to [this issue](https://github.com/concept-graphs/concept-graphs/issues/18#issuecomment-1876673985) for a brief description of how they are generated. Unzip the file and record its location in `REPLICA_SEMANTIC_ROOT`. 
 
 Then run the following command to evaluate the semantic segmentation results. The results will be saved in the `results` folder, where the mean recall `mrecall` is the mAcc and `fmiou` is the F-mIoU reported in the paper. 
+
+export REPLICA_SEMANTIC_ROOT=/Dataset/Replica/replica-semantic-saved-maps-gt/
 
 ```bash
 # CoceptGraphs (without open-vocab detector)

@@ -278,18 +278,22 @@ def main(args: argparse.Namespace):
     print("Excluding classes: ", [(i, class_names[i]) for i in exclude_class])
 
     # Compute the CLIP embedding for each class
+    clip_device = "cpu" # to save memory
     clip_model, _, clip_preprocess = open_clip.create_model_and_transforms("ViT-H-14", "laion2b_s32b_b79k")
-    clip_model = clip_model.to(args.device)
+    clip_model = clip_model.to(clip_device)
     clip_tokenizer = open_clip.get_tokenizer("ViT-H-14")
     prompts = [f"an image of {c}" for c in class_names]
     text = clip_tokenizer(prompts)
-    text = text.to(args.device)
+    text = text.to(clip_device)
     class_feats = clip_model.encode_text(text)
     class_feats /= class_feats.norm(dim=-1, keepdim=True) # (num_classes, D)
+    class_feats  = class_feats.to(args.device) # move back to args.device
 
     conf_matrices = {}
     conf_matrix_all = 0
     for scene_id, scene_id_ in zip(REPLICA_SCENE_IDS, REPLICA_SCENE_IDS_):
+        if scene_id != "room1":
+            continue
         print("Evaluating on:", scene_id, scene_id_)
         conf_matrix, keep_index = eval_replica(
             scene_id = scene_id,

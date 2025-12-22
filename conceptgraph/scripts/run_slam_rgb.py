@@ -24,7 +24,6 @@ def get_parser() -> argparse.ArgumentParser:
         "--dataset_config", type=str, required=True,
         help="This path may need to be changed depending on where you run this script. "
     )
-    parser.add_argument("--scene_id", type=str, default="train_3")
     parser.add_argument("--image_height", type=int, default=480)
     parser.add_argument("--image_width", type=int, default=640)
     
@@ -48,7 +47,7 @@ def main(args: argparse.Namespace):
         load_embeddings = True
         embedding_dir = "embed_semseg"
         semseg_classes = json.load(open(
-            args.dataset_root / args.scene_id / "embed_semseg_classes.json", "r"
+            args.dataset_root / "embed_semseg_classes.json", "r"
         ))
         embedding_dim = len(semseg_classes)
     else:
@@ -59,7 +58,6 @@ def main(args: argparse.Namespace):
     dataset = get_dataset(
         dataconfig=args.dataset_config,
         basedir=args.dataset_root,
-        sequence=args.scene_id,
         desired_height=args.image_height,
         desired_width=args.image_width,
         start=args.start,
@@ -109,7 +107,7 @@ def main(args: argparse.Namespace):
         # frame_prev = frame_cur # Keep it None when we use the gt odom
         torch.cuda.empty_cache()
         
-    dir_to_save_map = os.path.join(args.dataset_root, args.scene_id, "rgb_cloud")
+    dir_to_save_map = os.path.join(args.dataset_root, "rgb_cloud")
     print(f"Saving the map to {dir_to_save_map}")
     os.makedirs(dir_to_save_map, exist_ok=True)
     pointclouds.save_to_h5(dir_to_save_map)
