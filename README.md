@@ -241,10 +241,9 @@ python slam/cfslam_pipeline_batch.py \
 SCENE_NAME=room0
 THRESHOLD=1.2
 python slam/cfslam_pipeline_batch.py \
-    dataset_root=$REPLICA_ROOT \
+    dataset_root=$REPLICA_ROOT/$SCENE_NAME \
     dataset_config=$REPLICA_CONFIG_PATH \
     stride=5 \
-    scene_id=$SCENE_NAME \
     spatial_sim_type=overlap \
     mask_conf_threshold=0.25 \
     match_method=sim_sum \
@@ -299,7 +298,7 @@ python scripts/eval_replica_semseg.py \
     --replica_root $REPLICA_ROOT \
     --replica_semantic_root $REPLICA_SEMANTIC_ROOT \
     --n_exclude 6 \
-    --pred_exp_name ram_withbg_allclasses_overlap_maskconf0.25_simsum1.2_dbscan.1_masksub
+    --pred_exp_name ram_withbg_allclasses_overlap_maskconf0.25_simsum1.2_dbscan.1
 ```
 
 
