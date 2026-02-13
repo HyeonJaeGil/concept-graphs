@@ -58,6 +58,10 @@ def get_parser():
         "--save", action="store_true",
         help="Whether to save the results to a csv file."
     )
+    # parser.add_argument(
+    #     "--save_pcd", action="store_true",
+    #     help="Whether to save the predicted and GT point clouds as PLY files."
+    # )
     parser.add_argument(
         "--device", type=str, default="cuda:0"
     )
@@ -254,11 +258,17 @@ def eval_replica(
     # # predicted point cloud in open3d
     # pred_pcd = o3d.geometry.PointCloud()
     # pred_pcd.points = o3d.utility.Vector3dVector(pred_xyz.numpy())
-    # pred_pcd.colors = o3d.utility.Vector3dVector(class2color[pred_class.numpy()])
+    # pred_pcd.colors = o3d.utility.Vector3dVector(class_colors[pred_class.numpy()])
+
+    # artifacts = {}
+    # artifacts['pred_pcd_before_resampling'] = pred_pcd_before_resampling
+    # artifacts['pred_pcd_after_resampling'] = pred_pcd_after_resampling
+    # artifacts['gt_pcd'] = gt_pcd
 
     # o3d.visualization.draw_geometries([pred_pcd])
     # o3d.visualization.draw_geometries([gt_pcd])
     
+    # return confmatrix, keep_index, artifacts
     return confmatrix, keep_index
     
 
@@ -316,8 +326,10 @@ def main(args: argparse.Namespace):
 
     conf_matrices = {}
     conf_matrix_all = 0
+    artifacts_per_scene = {}
     for scene_id, scene_id_ in zip(selected_scene_ids, selected_scene_ids_):
         print("Evaluating on:", scene_id, scene_id_)
+        # conf_matrix, keep_index, artifacts = eval_replica(
         conf_matrix, keep_index = eval_replica(
             scene_id = scene_id,
             scene_id_ = scene_id_,
@@ -336,7 +348,8 @@ def main(args: argparse.Namespace):
             "conf_matrix": conf_matrix,
             "keep_index": keep_index,
         }
-        
+        # artifacts_per_scene[scene_id] = artifacts
+
     # Remove the rows and columns that are not in keep_class_index
     conf_matrices["all"] = {
         "conf_matrix": conf_matrix_all,
@@ -384,6 +397,30 @@ def main(args: argparse.Namespace):
             args.pred_exp_name, args.n_exclude
         )
         pickle.dump(conf_matrices, open(save_path, "wb"))
+
+
+    # if args.save_pcd:
+    #     # save point cloud (pred, gt) in each artifact to sub-folder
+    #     pcd_save_root = "./results/%s/replica_ex%d_pcds/" % (
+    #         args.pred_exp_name, args.n_exclude
+    #     )
+    #     os.makedirs(pcd_save_root, exist_ok=True)
+    #     for scene_id, artifacts in artifacts_per_scene.items():
+    #         pred_pcd_before_resampling = artifacts['pred_pcd_before_resampling']
+    #         pred_pcd_after_resampling = artifacts['pred_pcd_after_resampling']
+    #         gt_pcd = artifacts['gt_pcd']
+    #         o3d.io.write_point_cloud(
+    #             os.path.join(pcd_save_root, f"{scene_id}_pred_before_resampling.ply"),
+    #             pred_pcd_before_resampling
+    #         )
+    #         o3d.io.write_point_cloud(
+    #             os.path.join(pcd_save_root, f"{scene_id}_pred_after_resampling.ply"),
+    #             pred_pcd_after_resampling
+    #         )
+    #         o3d.io.write_point_cloud(
+    #             os.path.join(pcd_save_root, f"{scene_id}_gt.ply"),
+    #             gt_pcd
+    #         )
 
 
 if __name__ == '__main__':
