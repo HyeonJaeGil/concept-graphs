@@ -151,7 +151,7 @@ class OnlineObjectRenderer():
         else:
             return rendered_image, None
 
-def get_random_colors(num_colors):
+def get_random_colors(num_colors, seed=None):
     '''
     Generate random colors for visualization
     
@@ -162,6 +162,8 @@ def get_random_colors(num_colors):
         colors (np.ndarray): (num_colors, 3) array of colors, in RGB, [0, 1]
     '''
     colors = []
+    if seed is not None:
+        np.random.seed(seed)
     for i in range(num_colors):
         colors.append(np.random.rand(3))
     colors = np.array(colors)
