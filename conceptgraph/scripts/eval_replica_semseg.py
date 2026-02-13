@@ -153,6 +153,14 @@ def eval_replica(
     object_class_sim[:, ignore_index] = -1e10
     object_class = object_class_sim.argmax(dim=-1) # (num_objects,)
     
+    # print object_class's name
+    print("Assigned object classes: ")
+    for i in range(len(objects)):
+        cn = class_names[object_class[i].item()]
+        # get original label
+        orig_label = objects[i]['label'] if 'label' in objects[i] else "N/A"
+        print(f"Object {i}: (orig: {orig_label}) class {object_class[i].item()} - {cn}")
+    
     if args.n_exclude == 1:
         if results['bg_objects'] is None:
             print("Warning: no background objects found. This is expected if only SAM is used, but not the detector. ")
