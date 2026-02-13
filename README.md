@@ -301,6 +301,10 @@ python scripts/eval_replica_semseg.py \
     --pred_exp_name ram_withbg_allclasses_overlap_maskconf0.25_simsum1.2_dbscan.1
 ```
 
+### ScanNet evaluation
+```bash
+python scripts/eval_scannet_semseg.py --scannet_root $SCANNET_ROOT --pred_exp_name ram_withbg --scene_id scene0011_00 --export_gt --pcd_save_dir $SCANNET_ROOT/artifacts
+```
 
 
 ### Extract object captions and build scene graphs

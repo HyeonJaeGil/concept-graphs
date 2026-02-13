@@ -499,7 +499,7 @@ class ScannetDataset(GradSLAMDataset):
         self.pose_path = None
 
         # Load the intrinsic matrix from the file in each scene
-        scene_intrinsic_path = os.path.join(self.input_folder, "intrinsic", "intrinsic_color.txt")
+        scene_intrinsic_path = os.path.join(self.input_folder, "intrinsic_color.txt")
         scene_intrinsic = np.loadtxt(scene_intrinsic_path)
         config_dict['camera_params']['fx'] = scene_intrinsic[0, 0]
         config_dict['camera_params']['fy'] = scene_intrinsic[1, 1]
@@ -521,7 +521,7 @@ class ScannetDataset(GradSLAMDataset):
 
     def get_filepaths(self):
         color_paths = natsorted(glob.glob(f"{self.input_folder}/color/*.jpg"))
-        depth_paths = natsorted(glob.glob(f"{self.input_folder}/depth/*.png"))
+        depth_paths = natsorted(glob.glob(f"{self.input_folder}/rendered_depth/*.png")) # ['depth', 'rendered_depth']
         embedding_paths = None
         if self.load_embeddings:
             embedding_paths = natsorted(
@@ -531,7 +531,7 @@ class ScannetDataset(GradSLAMDataset):
 
     def load_poses(self):
         poses = []
-        posefiles = natsorted(glob.glob(f"{self.input_folder}/pose/*.txt"))
+        posefiles = natsorted(glob.glob(f"{self.input_folder}/poses/*.txt"))
         for posefile in posefiles:
             _pose = torch.from_numpy(np.loadtxt(posefile))
             poses.append(_pose)
