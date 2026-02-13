@@ -49,6 +49,15 @@ def get_parser():
         6: exclude "other", "floor", "wall", "ceiling", "door", "window"
         ''',
     )
+    # enable multiple (default all) 
+    parser.add_argument(
+        "--scene_id", type=str, default="all", nargs="+",
+        help="The replica scene id to evaluate on. Default to all scenes."
+    )
+    parser.add_argument(
+        "--save", action="store_true",
+        help="Whether to save the results to a csv file."
+    )
     parser.add_argument(
         "--device", type=str, default="cuda:0"
     )
@@ -59,12 +68,13 @@ def eval_replica(
     scene_id_: str,
     class_names: list[str],
     class_feats: torch.Tensor,
+    class_colors: np.ndarray,
     args: argparse.Namespace,
     class_all2existing: torch.Tensor,
     ignore_index=[],
     gt_class_only: bool = True, # only compute the conf matrix for the GT classes
 ):
-    class2color = get_random_colors(len(class_names))
+    # class2color = get_random_colors(len(class_names))
 
     '''Load the GT point cloud'''
     gt_pc_path = os.path.join(
@@ -190,10 +200,10 @@ def eval_replica(
     
     # # predicted point cloud in open3d
     # print("Before resampling")
-    # pred_pcd = o3d.geometry.PointCloud()
-    # pred_pcd.points = o3d.utility.Vector3dVector(pred_xyz.numpy())
-    # pred_pcd.colors = o3d.utility.Vector3dVector(class2color[pred_class.numpy()])
-    # o3d.visualization.draw_geometries([pred_pcd])
+    # pred_pcd_before_resampling = o3d.geometry.PointCloud()
+    # pred_pcd_before_resampling.points = o3d.utility.Vector3dVector(pred_xyz.numpy())
+    # pred_pcd_before_resampling.colors = o3d.utility.Vector3dVector(class_colors[pred_class.numpy()])
+    # o3d.visualization.draw_geometries([pred_pcd_before_resampling])
     
     # Resample the pred_xyz and pred_class based on slam_nn_in_pred
     pred_xyz = slam_xyz
@@ -202,10 +212,10 @@ def eval_replica(
     
     # # predicted point cloud in open3d
     # print("After resampling")
-    # pred_pcd = o3d.geometry.PointCloud()
-    # pred_pcd.points = o3d.utility.Vector3dVector(pred_xyz.numpy())
-    # pred_pcd.colors = o3d.utility.Vector3dVector(class2color[pred_class.numpy()])
-    # o3d.visualization.draw_geometries([pred_pcd])
+    # pred_pcd_after_resampling = o3d.geometry.PointCloud()
+    # pred_pcd_after_resampling.points = o3d.utility.Vector3dVector(pred_xyz.numpy())
+    # pred_pcd_after_resampling.colors = o3d.utility.Vector3dVector(class_colors[pred_class.numpy()])
+    # o3d.visualization.draw_geometries([pred_pcd_after_resampling])
     
     # Compute the associations between the predicted and ground truth point clouds
     idx_pred_to_gt, idx_gt_to_pred = compute_pred_gt_associations(
@@ -239,7 +249,7 @@ def eval_replica(
     # # GT point cloud in open3d
     # gt_pcd = gt_map.open3d(0)
     # gt_pcd.transform(gt_poses[0].numpy())
-    # gt_pcd.colors = o3d.utility.Vector3dVector(class2color[gt_class])
+    # gt_pcd.colors = o3d.utility.Vector3dVector(class_colors[gt_class])
     
     # # predicted point cloud in open3d
     # pred_pcd = o3d.geometry.PointCloud()
@@ -276,6 +286,18 @@ def main(args: argparse.Namespace):
         raise ValueError("Invalid n_exclude: %d" % args.n_exclude)
     
     print("Excluding classes: ", [(i, class_names[i]) for i in exclude_class])
+    
+    if "all" in args.scene_id:
+        selected_scene_ids = REPLICA_SCENE_IDS
+        selected_scene_ids_ = REPLICA_SCENE_IDS_
+        print("Evaluating on all scenes: ", selected_scene_ids)
+    else:
+        # use only the specified scene ids
+        selected_scene_ids = args.scene_id
+        selected_scene_ids_ = [
+            REPLICA_SCENE_IDS_[REPLICA_SCENE_IDS.index(sid)] for sid in selected_scene_ids
+        ]
+        print("Evaluating on specified scenes: ", selected_scene_ids)
 
     # Compute the CLIP embedding for each class
     clip_device = "cpu" # to save memory
@@ -288,18 +310,20 @@ def main(args: argparse.Namespace):
     class_feats = clip_model.encode_text(text)
     class_feats /= class_feats.norm(dim=-1, keepdim=True) # (num_classes, D)
     class_feats  = class_feats.to(args.device) # move back to args.device
+    
+    # set class colors
+    class2color = get_random_colors(len(class_names), seed=42)
 
     conf_matrices = {}
     conf_matrix_all = 0
-    for scene_id, scene_id_ in zip(REPLICA_SCENE_IDS, REPLICA_SCENE_IDS_):
-        if scene_id != "room1":
-            continue
+    for scene_id, scene_id_ in zip(selected_scene_ids, selected_scene_ids_):
         print("Evaluating on:", scene_id, scene_id_)
         conf_matrix, keep_index = eval_replica(
             scene_id = scene_id,
             scene_id_ = scene_id_,
             class_names = class_names,
             class_feats = class_feats,
+            class_colors = class2color,
             args = args,
             class_all2existing = class_all2existing,
             ignore_index = exclude_class,
@@ -337,20 +361,29 @@ def main(args: argparse.Namespace):
                 "fmiou": mdict["fmiou"] * 100.0,
             }
         )
-        
-    df_result = pd.DataFrame(results)
     
-    save_path = "./results/%s/replica_ex%d_results.csv" % (
-        args.pred_exp_name, args.n_exclude
-    )
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    df_result.to_csv(save_path, index=False)
+    # print the results
+    for res in results:
+        print(
+            f"Scene {res['scene_id']}: mIoU: {res['miou']:.2f}, "
+            f"mRecall: {res['mrecall']:.2f}, mPrecision: {res['mprecision']:.2f}, "
+            f"mF1-score: {res['mf1score']:.2f}, fmiou: {res['fmiou']:.2f}"
+        )
 
-    # Also save the conf_matrices
-    save_path = "./results/%s/replica_ex%d_conf_matrices.pkl" % (
-        args.pred_exp_name, args.n_exclude
-    )
-    pickle.dump(conf_matrices, open(save_path, "wb"))
+    if args.save:
+        df_result = pd.DataFrame(results)
+        
+        save_path = "./results/%s/replica_ex%d_results.csv" % (
+            args.pred_exp_name, args.n_exclude
+        )
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+        df_result.to_csv(save_path, index=False)
+
+        # Also save the conf_matrices
+        save_path = "./results/%s/replica_ex%d_conf_matrices.pkl" % (
+            args.pred_exp_name, args.n_exclude
+        )
+        pickle.dump(conf_matrices, open(save_path, "wb"))
 
 
 if __name__ == '__main__':
