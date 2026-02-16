@@ -265,12 +265,14 @@ def extract_node_captions(args):
 
     # Creating a namespace object to pass args to the LLaVA chat object
     chat_args = SimpleNamespace()
-    chat_args.model_path = os.getenv("LLAVA_CKPT_PATH")
+    # chat_args.model_path = os.getenv("LLAVA_CKPT_PATH")
+    chat_args.model_path = "zero7101/LLaVA-7b-v0"
     chat_args.conv_mode = "v0_mmtag" # "multimodal"
     chat_args.num_gpus = 1
 
     # rich console for pretty printing
-    console = rich.console.Console()
+    from rich.console import Console
+    console = Console()
 
     # Initialize LLaVA chat
     chat = LLaVaChat(chat_args.model_path, chat_args.conv_mode, chat_args.num_gpus)
@@ -289,7 +291,8 @@ def extract_node_captions(args):
 
     caption_dict_list = []
 
-    for idx_obj, obj in tqdm(enumerate(scene_map), total=len(scene_map)):
+    # for idx_obj, obj in tqdm(enumerate(scene_map), total=len(scene_map)):
+    for idx_obj, obj in enumerate(scene_map):
         conf = obj["conf"]
         conf = np.array(conf)
         idx_most_conf = np.argsort(conf)[::-1]
@@ -307,7 +310,8 @@ def extract_node_captions(args):
             continue 
         idx_most_conf = idx_most_conf[:args.max_detections_per_object]
 
-        for idx_det in tqdm(idx_most_conf):
+        # for idx_det in tqdm(idx_most_conf):
+        for idx_det in idx_most_conf:
             # image = Image.open(correct_path).convert("RGB")
             image = Image.open(obj["color_path"][idx_det]).convert("RGB")
             xyxy = obj["xyxy"][idx_det]
@@ -448,8 +452,8 @@ def refine_node_captions(args):
         curr_chat_messages = gpt_messages[:]
         curr_chat_messages.append({"role": "user", "content": preds})
         chat_completion = openai.ChatCompletion.create(
-            # model="gpt-3.5-turbo",
-            model="gpt-4",
+            model="gpt-3.5-turbo",
+            # model="gpt-4",
             messages=curr_chat_messages,
             timeout=TIMEOUT,  # Timeout in seconds
         )
@@ -729,8 +733,8 @@ def build_scenegraph(args):
 
                     start_time = time.time()
                     chat_completion = openai.ChatCompletion.create(
-                        # model="gpt-3.5-turbo",
-                        model="gpt-4",
+                        model="gpt-3.5-turbo",
+                        # model="gpt-4",
                         messages=[{"role": "user", "content": DEFAULT_PROMPT + "\n\n" + input_json_str}],
                         timeout=TIMEOUT,  # Timeout in seconds
                     )

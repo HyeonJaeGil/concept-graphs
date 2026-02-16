@@ -766,13 +766,14 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_path", type=str, default=None)
     parser.add_argument("--image_file", type=str, required=True)
-    parser.add_argument("--conv_mode", type=str, default="multimodal")
+    parser.add_argument("--conv_mode", type=str, default="v0_mmtag")
     parser.add_argument("--num_gpus", type=int, default=1)
     args = parser.parse_args()
     
     if args.model_path is None:
         try: 
-            args.model_path = os.environ["LLAVA_CKPT_PATH"]
+            # args.model_path = os.environ["LLAVA_CKPT_PATH"]
+            args.model_path = "zero7101/LLaVA-7b-v0"
         except KeyError:
             print("Please provide a model path or set the environment variable LLAVA_CKPT_PATH")
             exit(1)
