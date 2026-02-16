@@ -127,7 +127,7 @@ def eval_replica(
     result_paths = glob.glob(
         os.path.join(
             args.replica_root, scene_id, "pcd_saves", 
-            f"full_pcd_{args.pred_exp_name}*.pkl.gz"
+            f"{args.pred_exp_name}*.pkl.gz"
         )
     )
     if len(result_paths) == 0:
@@ -148,6 +148,7 @@ def eval_replica(
     object_feats = objects.get_stacked_values_torch("clip_ft").to(args.device)
     object_feats = object_feats / object_feats.norm(dim=-1, keepdim=True) # (num_objects, D)
     object_class_sim = object_feats @ class_feats.T # (num_objects, num_classes)
+    print(f"object_feats shape: {object_feats.shape}, class_feats shape: {class_feats.shape}, object_class_sim shape: {object_class_sim.shape}")
     
     # suppress the logits to -inf that are not in torch.from_numpy(keep_class_index)
     object_class_sim[:, ignore_index] = -1e10

@@ -15,7 +15,7 @@ Expected GT format (per scene):
     - labels: (N,) int (NYU40 IDs)
 
 Predictions:
-  - ConceptGraphs: <scannet_root>/<scene_id>/pcd_saves/full_pcd_<pred_exp_name>*.pkl.gz (a .pkl.gz containing results['objects'])
+  - ConceptGraphs: <scannet_root>/<scene_id>/pcd_saves/<pred_exp_name>*.pkl.gz (a .pkl.gz containing results['objects'])
   - ConceptFusion: <scannet_root>/<scene_id>-map  (gradslam Pointclouds h5)
   - OpenMask3D:    <scannet_root>/<scene_id>/openmask3d.npz (points, features)
   - OpenFusion:    <scannet_root>/<scene_id>/openfusion_vlfusion.npz (points, labels)
@@ -209,8 +209,8 @@ def get_parser() -> argparse.ArgumentParser:
     
     p.add_argument("--scannet_root", type=str, default="/path/to/scannet",)
 
-    p.add_argument("--pred_exp_name", type=str, default="ram_withbg_allclasses_overlap_maskconf0.25_simsum1.2_dbscan.1_masksub",
-                   help="exp name under <scannet_root>/<scene_id>/pcd_saves/full_pcd_<pred_exp_name>*.pkl.gz")
+    p.add_argument("--pred_exp_name", type=str, default="full_pcd_ram_withbg_allclasses_overlap_maskconf0.25_simsum1.2_dbscan.1_masksub",
+                   help="exp name under <scannet_root>/<scene_id>/pcd_saves/<pred_exp_name>*.pkl.gz")
 
     # Scene selection
     p.add_argument("--scene_id", type=str, default=["all"], nargs="+",
@@ -222,10 +222,14 @@ def get_parser() -> argparse.ArgumentParser:
                    help="Optional: if set, save per-scene labeled GT/pred point clouds as <scene_id>_*.ply.")
 
     # Class/model
-    p.add_argument("--n_exclude", type=int, default=1, choices=[1],
-                   help="1: exclude 'otherfurniture' (NYU40 id 39).")
+    p.add_argument("--n_exclude", type=int, default=1, choices=[1, 4, 6],
+                   help='''Number of classes to exclude:
+                   1: exclude "otherfurniture"
+                   4: exclude "otherfurniture", "floor", "wall", "ceiling"
+                   6: exclude "otherfurniture", "floor", "wall", "ceiling", "door", "window"
+                   ''')
     p.add_argument("--gt_class_only", action="store_true", help="Evaluate only classes present in GT per scene.")
-    p.add_argument("--model", type=str, default="open_clip", choices=["eva02", "open_clip"],
+    p.add_argument("--clip_model", type=str, default="default", choices=["default", "eva"],
                    help="Text encoder backbone for zero-shot CLIP classification.")
     p.add_argument("--device", type=str, default="cuda:0")
 
@@ -274,16 +278,18 @@ def _build_class_text_features(
     """
     Builds CLIP text embeddings for 'an image of <class>'.
     """
-    if model_name == "open_clip":
+    if model_name == "default":
         clip_model, _, _ = open_clip.create_model_and_transforms("ViT-H-14", "laion2b_s32b_b79k")
         tokenizer = open_clip.get_tokenizer("ViT-H-14")
-    else:  # eva02
+    elif model_name == "eva":
         clip_model, _, _ = open_clip.create_model_and_transforms(
             "hf-hub:timm/eva02_base_patch16_clip_224.merged2b_s8b_b131k"
         )
         tokenizer = open_clip.get_tokenizer(
             "hf-hub:timm/eva02_base_patch16_clip_224.merged2b_s8b_b131k"
         )
+    else:
+        raise ValueError(f"Unsupported clip_model: {model_name}")
 
     clip_model = clip_model.to(device)
     prompts = [f"an image of {c}" for c in class_names]
@@ -364,6 +370,7 @@ def _save_labeled_point_cloud(
 def load_predictions(
     args: argparse.Namespace,
     scene_id: str,
+    class_names: List[str],
     class_feats: Optional[torch.Tensor],
     ignore_index: np.ndarray,
 ) -> Tuple[torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
@@ -382,7 +389,7 @@ def load_predictions(
     result_paths = glob.glob(
         os.path.join(
             args.scannet_root, scene_id, "pcd_saves", 
-            f"full_pcd_{args.pred_exp_name}*.pkl.gz"
+            f"{args.pred_exp_name}*.pkl.gz"
         )
     )
     if len(result_paths) == 0:
@@ -408,6 +415,13 @@ def load_predictions(
     object_class_sim = object_feats @ class_feats.T
     object_class_sim[:, ignore_index] = -1e10
     object_class = object_class_sim.argmax(dim=-1).detach().cpu()  # per object class id
+
+    print("Assigned object classes:")
+    for i in range(len(objects)):
+        class_id = int(object_class[i].item())
+        class_name = class_names[class_id]
+        orig_label = objects[i]["label"] if "label" in objects[i] else "N/A"
+        print(f"Object {i}: (orig: {orig_label}) class {class_id} - {class_name}")
 
     pred_xyz_list = []
     pred_color_list = []
@@ -453,7 +467,13 @@ def eval_scannet_scene(
     print(f"[{scene_id}] evaluating {len(keep_index)} classes:", [(i, class_names[i]) for i in keep_index])
 
     # Load predictions
-    pred_xyz, pred_class, pred_color = load_predictions(args, scene_id, class_feats, ignore_index)
+    pred_xyz, pred_class, pred_color = load_predictions(
+        args=args,
+        scene_id=scene_id,
+        class_names=class_names,
+        class_feats=class_feats,
+        ignore_index=ignore_index,
+    )
     
     if save_dir:
         os.makedirs(save_dir, exist_ok=True)
@@ -543,9 +563,21 @@ def main(args: argparse.Namespace) -> None:
 
     # Exclusions
     if args.n_exclude == 1:
-        exclude_class = np.array([class_names.index("otherfurniture")], dtype=np.int64)
+        exclude_names = ["otherfurniture"]
+    elif args.n_exclude == 4:
+        exclude_names = ["otherfurniture", "floor", "wall", "ceiling"]
+    elif args.n_exclude == 6:
+        exclude_names = ["otherfurniture", "floor", "wall", "ceiling", "door", "window"]
     else:
         raise ValueError(f"Unsupported n_exclude: {args.n_exclude}")
+
+    missing_exclude_names = [c for c in exclude_names if c not in class_names]
+    if missing_exclude_names:
+        print(
+            "Warning: requested excluded classes not present in current class set:",
+            missing_exclude_names,
+        )
+    exclude_class = np.array([class_names.index(c) for c in exclude_names if c in class_names], dtype=np.int64)
     print("Excluding classes:", [(int(i), class_names[int(i)]) for i in exclude_class])
 
     # Scene selection
@@ -562,7 +594,7 @@ def main(args: argparse.Namespace) -> None:
     # Class text feats
     class_feats = _build_class_text_features(
         class_names=class_names,
-        model_name=args.model,
+        model_name=args.clip_model,
         device=args.device,
     )
 
@@ -633,7 +665,8 @@ def main(args: argparse.Namespace) -> None:
     if args.save:
         os.makedirs(args.out_dir, exist_ok=True)
         df = pd.DataFrame(results_rows)
-        csv_path = os.path.join(args.out_dir, "scannet_semseg_results.csv")
+        exp_basename = os.path.basename(args.pred_exp_name)
+        csv_path = os.path.join(args.out_dir, f"scannet_semseg_results_{exp_basename}.csv")
         df.to_csv(csv_path, index=False)
 
         pkl_path = os.path.join(args.out_dir, "scannet_semseg_conf_matrices.pkl")
