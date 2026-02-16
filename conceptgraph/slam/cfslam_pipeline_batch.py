@@ -160,7 +160,7 @@ def main(cfg : DictConfig):
         
     if cfg.save_objects_all_frames:
         save_all_folder = cfg.dataset_root \
-            / "objects_all_frames" / f"{cfg.gsa_variant}_{cfg.save_suffix}"
+            / "objects_all_frames" / f"{cfg.cfslam_save_name}"
         os.makedirs(save_all_folder, exist_ok=True)
 
     for idx in trange(len(dataset)):
@@ -370,7 +370,7 @@ def main(cfg : DictConfig):
         }
 
         pcd_save_path = cfg.dataset_root / \
-            'pcd_saves' / f"full_pcd_{cfg.gsa_variant}_{cfg.save_suffix}.pkl.gz"
+            'pcd_saves' / f"{cfg.cfslam_save_name}.pkl.gz"
         # make the directory if it doesn't exist
         pcd_save_path.parent.mkdir(parents=True, exist_ok=True)
         pcd_save_path = str(pcd_save_path)
@@ -426,7 +426,7 @@ def main(cfg : DictConfig):
         frames = np.stack(frames)
         video_save_path = (
             cfg.dataset_root
-            / ("objects_mapping-%s-%s.mp4" % (cfg.gsa_variant, cfg.save_suffix))
+            / ("objects_mapping-%s.mp4" % (cfg.cfslam_save_name))
         )
         imageio.mimwrite(video_save_path, frames, fps=10)
         print("Save video to %s" % video_save_path)

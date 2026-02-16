@@ -8,11 +8,27 @@ stride: 1
 image_height: null # if null, it will be determined by dataconfig
 image_width: null # if null, it will be determined by dataconfig
 
+# Grounded-SAM generation (used by scripts/generate_gsa_results.py)
+box_threshold: 0.25
+text_threshold: 0.25
+nms_threshold: 0.5
+class_set: none            # scene | generic | minimal | tag2text | ram | none
+detector: dino              # dino | yolo
+add_bg_classes: !!bool False
+accumu_classes: !!bool False
+sam_variant: sam            # sam | mobilesam | lighthqsam | fastsam
+save_video: !!bool False
+stage: all                  # all | seg | clip
+use_slow_vis: !!bool False
+clip_model: default         # default | eva
+
 # Input detections
-gsa_variant: ram
-detection_folder_name: gsa_detections_${gsa_variant}
-det_vis_folder_name: gsa_vis_${gsa_variant}
-color_file_name: gsa_classes_${gsa_variant}
+detection_folder_name: gsa_detections_${class_set}
+det_vis_folder_name: gsa_vis_${class_set}
+color_file_name: gsa_classes_${class_set}
+
+# cfslam output path
+cfslam_save_name: conceptgraph_${class_set}
 
 device: cuda
 
@@ -61,7 +77,6 @@ merge_interval: -1             # Merge objects based on geometric and semantic s
 
 # Output point cloud
 save_pcd: !!bool True
-save_suffix: exp
 
 # Visualization
 vis_render: !!bool False           # If True, the objects will be rendered to a video. 
@@ -70,3 +85,9 @@ class_agnostic: !!bool False   # If set, the color will be set by instance, rath
 
 save_objects_all_frames: !!bool False   # If True, the objects at all timesteps will be saved for future animation
 render_camera_path: "replica_room0.json"
+
+
+
+hydra:
+  job:
+    chdir: false
